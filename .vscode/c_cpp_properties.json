@@ -18,6 +18,7 @@
             ],
             "intelliSenseMode": "gcc-x64",
             "includePath": [
+                "/home/omar/Arduino/**",
                 "/home/omar/.arduino15/packages/esp8266/hardware/esp8266/3.0.2/tools/sdk/include",
                 "/home/omar/.arduino15/packages/esp8266/hardware/esp8266/3.0.2/tools/sdk/lwip2/include",
                 "/home/omar/.arduino15/packages/esp8266/hardware/esp8266/3.0.2/cores/esp8266",
