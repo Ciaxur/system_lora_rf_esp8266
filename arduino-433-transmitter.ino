@@ -4,6 +4,7 @@
 #include <cmath>
 #include <Adafruit_SSD1306.h>
 #include <Adafruit_INA219.h>
+#include <Base64.h>
 
 /*
 * ESP8266MOD Pinout: https://randomnerdtutorials.com/esp8266-pinout-reference-gpios
@@ -38,8 +39,6 @@ Adafruit_INA219 ina219;
 #define SCREEN_ADDRESS 0x3C ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
-const int protocolNum = 6;
-const int repeatedTransmit = 16;
 
 void enterErrorState() {
   while(true) {
@@ -100,45 +99,67 @@ void setup() {
   delay(1000);
 }
 
-void loop() {
-  // TEST:
-  ResponseStatus res = lora.sendMessage("Hello world!");
-  Serial.println(res.getResponseDescription());
-  delay(1000);
+// Shared struct between sender and receiver, which includes the intended payload.
+struct MessagePacket {
+  // Barometer data.
+  float pressure;
+  float temperature;
+  float altitude;
 
+  // Power consumption data.
+  float current_mA;
+  float loadVoltage;
+  float power_mW;
+};
+
+void loop() {
   display.clearDisplay();
 
+  // Store data in a shared struct to be transmitted.
+  MessagePacket txPacket;
+
   // Get barometer sensor info.
-  // float pressure = baro.getPressure(); // hPa
-  float temperature = baro.getTemperature(); // C
-  float altitude = baro.getAltitude(); // m
+  txPacket.pressure = baro.getPressure(); // hPa
+  txPacket.temperature = baro.getTemperature(); // C
+  txPacket.altitude = baro.getAltitude(); // m
 
   // Display barometer info.
   display.setCursor(0, 0);
   display.setTextSize(1);
   display.setTextColor(SSD1306_WHITE);
-  display.printf("B[%.1fm|%.1fC]", altitude, temperature);
+  display.printf("B[%.1fm|%.1fC]", txPacket.altitude, txPacket.temperature);
 
   // Get system power draw.
   float shuntvoltage = ina219.getShuntVoltage_mV();
   float busvoltage = ina219.getBusVoltage_V();
-  float current_mA = abs(ina219.getCurrent_mA());
-  float loadvoltage = busvoltage + (shuntvoltage / 1000);
-  float power_mW = ina219.getPower_mW();
+  txPacket.current_mA = abs(ina219.getCurrent_mA());
+  txPacket.loadVoltage = busvoltage + (shuntvoltage / 1000);
+  txPacket.power_mW = ina219.getPower_mW();
 
   // Display power info.
   display.setCursor(0, 9); // Font size is 6x8
-  display.printf("P[%.2fV|%.2fmA]", loadvoltage, current_mA);
+  display.printf("P[%.2fV|%.2fmA]", txPacket.loadVoltage, txPacket.current_mA);
   display.setCursor(0, 18);
-  display.printf("P[%.2fmW]", power_mW);
+  display.printf("P[%.2fmW]", txPacket.power_mW);
 
-  // Construct data.
-  uint64_t dataToTransmit = round(altitude);
+  // Package the struct into a base64 string.g
+  char *struct_bytes = reinterpret_cast<char*>(&txPacket);
+  const int encoded_length = Base64.encodedLength(sizeof(MessagePacket));
+  char buffer[encoded_length];
+  Base64.encode(buffer, struct_bytes, sizeof(MessagePacket));
+  String message{buffer};
 
   // Transmit data!
-  Serial.printf("[%lu] Sending code using protocol %d and repeats %d.\n", micros(), protocolNum, repeatedTransmit);
-  Serial.printf("Sending altitude = %.2fm\n", altitude);
-  // TODO: make a known fixed struct.
+  Serial.printf("Sending data of size %ubytes:\n", message.length());
+  Serial.printf("- pressure: %.2fhPa\n", txPacket.pressure);
+  Serial.printf("- temperature: %.2fC\n", txPacket.temperature);
+  Serial.printf("- altitude: %.2fm\n", txPacket.altitude);
+  Serial.printf("- current_mA: %.2fmA\n", txPacket.current_mA);
+  Serial.printf("- loadVoltage: %.2fV\n", txPacket.loadVoltage);
+  Serial.printf("- power_mW: %.2fmW\n", txPacket.power_mW);
+
+  ResponseStatus res = lora.sendFixedMessage(0x69, 0x00, 0x07, message);
+  Serial.println(res.getResponseDescription());
 
 
   // Push RAM to display.
