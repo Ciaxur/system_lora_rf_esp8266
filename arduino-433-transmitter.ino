@@ -1,12 +1,34 @@
-#define RCSwitchDisableReceiving
-#include <RCSwitch.h>
+#include <LoRa_E32.h>
 #include <Adafruit_MPL3115A2.h>
 #include <pins_arduino.h>
 #include <cmath>
 #include <Adafruit_SSD1306.h>
 #include <Adafruit_INA219.h>
 
-RCSwitch mySwitch{};
+/*
+* ESP8266MOD Pinout: https://randomnerdtutorials.com/esp8266-pinout-reference-gpios
+* LoRa Library: https://github.com/sandeepmistry/arduino-LoRa
+*/
+
+/*
+* LoRa E32-TTL-100 (SX1278) - Connections
+* Write on serial to transfer a message to other device
+*
+* M0         ----- D7 (Dynamic adjustment) - Used to configure the chip.
+* M1         ----- D6 (Dynamic adjustment) - Used to configure the chip.
+* RX         ----- D4 (PullUP; R4.7kOhm)
+* TX         ----- D3 (PullUP; R4.7kOhm)
+* AUX        ----- Not connected
+* VCC        ----- 3.3v/5v
+* GND        ----- GND
+*/
+#define TX   D3
+#define RX   D4
+#define AUX  D5 // not connected though.
+#define M0   D7
+#define M1   D6
+LoRa_E32 lora(TX ,RX, AUX, M0, M1);
+
 Adafruit_MPL3115A2 baro;
 Adafruit_INA219 ina219;
 
@@ -30,16 +52,18 @@ void enterErrorState() {
 }
 
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(9600);
 
   pinMode(LED_BUILTIN, OUTPUT);
 
-  Serial.printf("Transmitting on pin %d\n", D3);
-  pinMode(D3, OUTPUT);
-  mySwitch.enableTransmit(D3);
+  /// Setup LoRa device.
+  if (!lora.begin()) {
+    Serial.println("Failed to start LoRa.");
+    enterErrorState();
+  }
+  lora.setMode(MODE_0_NORMAL);
 
-  mySwitch.setProtocol(protocolNum);
-  mySwitch.setRepeatTransmit(repeatedTransmit);
+  // TODO: Configure the device's address & channel.
 
   // Setup Barometer.
   if (!baro.begin()) {
@@ -65,6 +89,11 @@ void setup() {
 }
 
 void loop() {
+  // TEST:
+  ResponseStatus res = lora.sendMessage("Hello world!");
+  Serial.println(res.getResponseDescription());
+  delay(1000);
+
   display.clearDisplay();
 
   // Get barometer sensor info.
@@ -97,7 +126,7 @@ void loop() {
   // Transmit data!
   Serial.printf("[%lu] Sending code using protocol %d and repeats %d.\n", micros(), protocolNum, repeatedTransmit);
   Serial.printf("Sending altitude = %.2fm\n", altitude);
-  mySwitch.send(dataToTransmit, 24);
+  // TODO: make a known fixed struct.
 
 
   // Push RAM to display.
