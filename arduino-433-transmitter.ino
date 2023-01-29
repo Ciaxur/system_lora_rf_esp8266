@@ -63,7 +63,19 @@ void setup() {
   }
   lora.setMode(MODE_0_NORMAL);
 
-  // TODO: Configure the device's address & channel.
+  /// Configure the device's address & channel.
+  ResponseStructContainer configContainer = lora.getConfiguration();
+  Configuration config = *(Configuration*) configContainer.data;
+
+  // Device address = 0x0001 on Channel 2.
+  config.ADDL = 0x00;
+  config.ADDH = 0x01;
+  config.CHAN = 0x02;
+  config.OPTION.fixedTransmission = FT_FIXED_TRANSMISSION;
+
+  // Applying the configuration will handle setting the device to PROGRAM mode
+  // and reverting back to the initial mode.
+  lora.setConfiguration(config, WRITE_CFG_PWR_DWN_SAVE);
 
   // Setup Barometer.
   if (!baro.begin()) {
