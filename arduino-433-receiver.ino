@@ -46,7 +46,19 @@ void setup() {
   }
   lora.setMode(MODE_0_NORMAL);
 
-  // TODO: Configure the device's address & channel.
+  /// Configure the device's address & channel.
+  ResponseStructContainer configContainer = lora.getConfiguration();
+  Configuration config = *(Configuration*) configContainer.data;
+
+  // Device address = 0x0069 on Channel 7.
+  config.ADDL = 0x00;
+  config.ADDH = 0x69;
+  config.CHAN = 0x07;
+  config.OPTION.fixedTransmission = FT_FIXED_TRANSMISSION;
+
+  // Applying the configuration will handle setting the device to PROGRAM mode
+  // and reverting back to the initial mode.
+  lora.setConfiguration(config, WRITE_CFG_PWR_DWN_SAVE);
 }
 bool ledState = false;
 ulong lastLedStateChange = millis();
