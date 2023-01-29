@@ -1,5 +1,6 @@
 #include <LoRa_E32.h>
 #include <pins_arduino.h>
+#include <Base64.h>
 
 /*
 * ESP8266MOD Pinout: https://randomnerdtutorials.com/esp8266-pinout-reference-gpios
@@ -60,8 +61,23 @@ void setup() {
   // and reverting back to the initial mode.
   lora.setConfiguration(config, WRITE_CFG_PWR_DWN_SAVE);
 }
+
+
 bool ledState = false;
 ulong lastLedStateChange = millis();
+
+// Shared struct between sender and receiver, which includes the intended payload.
+struct MessagePacket {
+  // Barometer data.
+  float pressure;
+  float temperature;
+  float altitude;
+
+  // Power consumption data.
+  float current_mA;
+  float loadVoltage;
+  float power_mW;
+};
 
 void loop() {
   if (lora.available()) {
@@ -71,8 +87,27 @@ void loop() {
       Serial.print("Failed to receive message: ");
       Serial.println(res.status.getResponseDescription());
     } else {
+      Serial.printf("Received message of size %ubytes.\n", res.data.length());
+
+      // Decode the received message.
+      // Deep copy to remove the const.
+      char encodedBuffer[res.data.length()];
+      memcpy((void*)encodedBuffer, res.data.c_str(), res.data.length());
+
+      const int decodedLength = Base64.decodedLength(encodedBuffer, sizeof(encodedBuffer));
+      char decodedBuffer[decodedLength];
+      Base64.decode(decodedBuffer, encodedBuffer, sizeof(encodedBuffer));
+
+      // Construct the packet.
+      MessagePacket packet = *(MessagePacket*) decodedBuffer;
+
       Serial.print("Received message: ");
-      Serial.println(res.data);
+      Serial.printf("- pressure: %.2fhPa\n", packet.pressure);
+      Serial.printf("- temperature: %.2fC\n", packet.temperature);
+      Serial.printf("- altitude: %.2fm\n", packet.altitude);
+      Serial.printf("- current_mA: %.2fmA\n", packet.current_mA);
+      Serial.printf("- loadVoltage: %.2fV\n", packet.loadVoltage);
+      Serial.printf("- power_mW: %.2fmW\n", packet.power_mW);
     }
   }
 
