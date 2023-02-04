@@ -25,13 +25,13 @@
 * M1         ----- D6 (Dynamic adjustment) - Used to configure the chip.
 * RX         ----- D4 (PullUP; R4.7kOhm)
 * TX         ----- D3 (PullUP; R4.7kOhm)
-* AUX        ----- Not connected
+* AUX        ----- D5
 * VCC        ----- 3.3v/5v
 * GND        ----- GND
 */
 #define TX   D3
 #define RX   D4
-#define AUX  D5 // not connected though.
+#define AUX  D5
 #define M0   D7
 #define M1   D6
 LoRa_E32 lora(TX ,RX, AUX, M0, M1);
