@@ -1,10 +1,12 @@
-#include <LoRa_E32.h>
-#include <Adafruit_MPL3115A2.h>
-#include <pins_arduino.h>
-#include <cmath>
-#include <Adafruit_SSD1306.h>
 #include <Adafruit_INA219.h>
+#include <Adafruit_MPL3115A2.h>
+#include <Adafruit_SSD1306.h>
 #include <Base64.h>
+#include <LoRa_E32.h>
+#include <cmath>
+#include <pins_arduino.h>
+
+#include "include/shared_structs.h"
 
 /*
 * ESP8266MOD Pinout: https://randomnerdtutorials.com/esp8266-pinout-reference-gpios
@@ -29,6 +31,7 @@
 #define M0   D7
 #define M1   D6
 LoRa_E32 lora(TX ,RX, AUX, M0, M1);
+Configuration config;
 
 Adafruit_MPL3115A2 baro;
 Adafruit_INA219 ina219;
@@ -38,7 +41,6 @@ Adafruit_INA219 ina219;
 #define OLED_RESET     -1 // Reset pin # (or -1 for internal reset)
 #define SCREEN_ADDRESS 0x3C ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
-
 
 void enterErrorState() {
   while(true) {
@@ -64,7 +66,7 @@ void setup() {
 
   /// Configure the device's address & channel.
   ResponseStructContainer configContainer = lora.getConfiguration();
-  Configuration config = *(Configuration*) configContainer.data;
+  config = *(Configuration*) configContainer.data;
 
   // Device address = 0x0001 on Channel 2.
   config.ADDL = 0x00;
@@ -74,7 +76,11 @@ void setup() {
 
   // Applying the configuration will handle setting the device to PROGRAM mode
   // and reverting back to the initial mode.
-  lora.setConfiguration(config, WRITE_CFG_PWR_DWN_SAVE);
+  ResponseStatus rc = lora.setConfiguration(config, WRITE_CFG_PWR_DWN_SAVE);
+  if (rc.code != E32_SUCCESS) {
+    Serial.println("Failed to write config to LoRa");
+    enterErrorState();
+  }
 
   // Setup Barometer.
   if (!baro.begin()) {
@@ -99,21 +105,21 @@ void setup() {
   delay(1000);
 }
 
-// Shared struct between sender and receiver, which includes the intended payload.
-struct MessagePacket {
-  // Barometer data.
-  float pressure;
-  float temperature;
-  float altitude;
-
-  // Power consumption data.
-  float current_mA;
-  float loadVoltage;
-  float power_mW;
-};
+bool configPrinted = false;
 
 void loop() {
   display.clearDisplay();
+
+  if (!configPrinted && micros64() > 2 * 1000000) {
+    configPrinted = true;
+    Serial.println("==== LoRa Configuration ====");
+    Serial.printf("ADDH: %#02x\n", config.ADDH);
+    Serial.printf("ADDL: %#02x\n", config.ADDL);
+    Serial.printf("CHAN: %#02x\n", config.CHAN);
+    Serial.printf("TX PWR: %#02x\n", config.OPTION.transmissionPower);
+    Serial.printf("TX FIXED: %#02x\n", config.OPTION.fixedTransmission);
+    Serial.println("============================");
+  }
 
   // Store data in a shared struct to be transmitted.
   MessagePacket txPacket;
@@ -159,7 +165,7 @@ void loop() {
   Serial.printf("- power_mW: %.2fmW\n", txPacket.power_mW);
 
   ResponseStatus res = lora.sendFixedMessage(0x69, 0x00, 0x07, message);
-  Serial.println(res.getResponseDescription());
+  Serial.printf("TX Status: %s\n", res.getResponseDescription());
 
 
   // Push RAM to display.
