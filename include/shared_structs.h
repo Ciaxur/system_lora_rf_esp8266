@@ -14,7 +14,7 @@ struct MessagePacket {
 };
 
 // Fixed transmission peer node data.
-struct PeerNode {
+struct NodeConfig {
   byte ADDH;
   byte ADDL;
   byte CHAN;

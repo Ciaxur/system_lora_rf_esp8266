@@ -31,11 +31,17 @@
 #define M0   D7
 #define M1   D6
 LoRa_E32 lora(TX ,RX, AUX, M0, M1);
+
 Configuration config;
-PeerNode peerNode = {
-  0x69, // ADDH
+NodeConfig curNode = {
+  0x01, // ADDH
   0x00, // ADDL
-  0x07, // CHAN
+  0x17, // CHAN
+};
+NodeConfig peerNode = {
+  0x00, // ADDH
+  0x00, // ADDL
+  0x17, // CHAN
 };
 
 Adafruit_MPL3115A2 baro;
@@ -76,11 +82,9 @@ void setup() {
   /// Configure the device's address & channel.
   ResponseStructContainer configContainer = lora.getConfiguration();
   config = *(Configuration*) configContainer.data;
-
-  // Device address = 0x0001 on Channel 2.
-  config.ADDL = 0x00;
-  config.ADDH = 0x01;
-  config.CHAN = 0x02;
+  config.ADDL = curNode.ADDL;
+  config.ADDH = curNode.ADDH;
+  config.CHAN = curNode.CHAN;
   config.OPTION.fixedTransmission = FT_FIXED_TRANSMISSION;
 
   // Applying the configuration will handle setting the device to PROGRAM mode

@@ -36,6 +36,11 @@
 #define M1   D6
 LoRa_E32 lora(TX ,RX, AUX, M0, M1);
 Configuration config;
+NodeConfig curNode = {
+  0x00, // ADDH
+  0x00, // ADDL
+  0x17, // CHAN
+};
 
 
 void enterErrorState() {
@@ -65,11 +70,9 @@ void setup() {
   /// Configure the device's address & channel.
   ResponseStructContainer configContainer = lora.getConfiguration();
   config = *(Configuration*) configContainer.data;
-
-  // Device address = 0x0069 on Channel 7.
-  config.ADDL = 0x00;
-  config.ADDH = 0x69;
-  config.CHAN = 0x07;
+  config.ADDL = curNode.ADDL;
+  config.ADDH = curNode.ADDH;
+  config.CHAN = curNode.CHAN;
   config.OPTION.fixedTransmission = FT_FIXED_TRANSMISSION;
 
   // Applying the configuration will handle setting the device to PROGRAM mode
