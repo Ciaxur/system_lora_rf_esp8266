@@ -51,6 +51,10 @@ void enterErrorState() {
 
 void setup() {
   Serial.begin(9600);
+  while (!Serial) {};
+  delay(2000);
+  Serial.println("Serial initialized");
+
   Serial.println("Setting up LoRa");
   if (!lora.begin()) {
     Serial.println("Failed to setup LoRa");

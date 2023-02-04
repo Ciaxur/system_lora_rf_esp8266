@@ -32,6 +32,11 @@
 #define M1   D6
 LoRa_E32 lora(TX ,RX, AUX, M0, M1);
 Configuration config;
+PeerNode peerNode = {
+  0x69, // ADDH
+  0x00, // ADDL
+  0x07, // CHAN
+};
 
 Adafruit_MPL3115A2 baro;
 Adafruit_INA219 ina219;
@@ -53,7 +58,11 @@ void enterErrorState() {
 }
 
 void setup() {
+  // Wait for Software Serial to come up.
   Serial.begin(9600);
+  while (!Serial) {};
+  delay(2000);
+  Serial.println("Serial initaialized");
 
   pinMode(LED_BUILTIN, OUTPUT);
 
@@ -119,6 +128,11 @@ void loop() {
     Serial.printf("TX PWR: %#02x\n", config.OPTION.transmissionPower);
     Serial.printf("TX FIXED: %#02x\n", config.OPTION.fixedTransmission);
     Serial.println("============================");
+    Serial.println("======== Peer Node =========");
+    Serial.printf("ADDH: %#02x\n", peerNode.ADDH);
+    Serial.printf("ADDL: %#02x\n", peerNode.ADDL);
+    Serial.printf("CHAN: %#02x\n", peerNode.CHAN);
+    Serial.println("============================");
   }
 
   // Store data in a shared struct to be transmitted.
@@ -164,7 +178,7 @@ void loop() {
   Serial.printf("- loadVoltage: %.2fV\n", txPacket.loadVoltage);
   Serial.printf("- power_mW: %.2fmW\n", txPacket.power_mW);
 
-  ResponseStatus res = lora.sendFixedMessage(0x69, 0x00, 0x07, message);
+  ResponseStatus res = lora.sendFixedMessage(peerNode.ADDH, peerNode.ADDL, peerNode.CHAN, message);
   Serial.printf("TX Status: %s\n", res.getResponseDescription());
 
 

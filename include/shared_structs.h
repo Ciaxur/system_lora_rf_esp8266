@@ -12,3 +12,10 @@ struct MessagePacket {
   float loadVoltage;
   float power_mW;
 };
+
+// Fixed transmission peer node data.
+struct PeerNode {
+  byte ADDH;
+  byte ADDL;
+  byte CHAN;
+};
