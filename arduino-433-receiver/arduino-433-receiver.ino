@@ -1,4 +1,3 @@
-#include <Base64.h>
 #include <LoRa_E32.h>
 #include <pins_arduino.h>
 
@@ -103,26 +102,17 @@ void loop() {
 
 
   if (lora.available()) {
-    ResponseContainer res = lora.receiveMessage();
+    ResponseStructContainer res = lora.receiveMessage(sizeof(MessagePacket));
 
     if (res.status.code != E32_SUCCESS) {
       Serial.print("Failed to receive message: ");
       Serial.println(res.status.getResponseDescription());
     } else {
-      Serial.printf("Received message of size %ubytes.\n", res.data.length());
-
-      // Decode the received message.
-      // Deep copy to remove the const.
-      char encodedBuffer[res.data.length()];
-      memcpy((void*)encodedBuffer, res.data.c_str(), res.data.length());
-
-      const int decodedLength = Base64.decodedLength(encodedBuffer, sizeof(encodedBuffer));
-      char decodedBuffer[decodedLength];
-      Base64.decode(decodedBuffer, encodedBuffer, sizeof(encodedBuffer));
+      Serial.printf("Received message of size %ubytes.\n", sizeof(res.data));
 
       #ifdef ENABLE_DEBUG
         // Construct the packet.
-        MessagePacket packet = *(MessagePacket*) decodedBuffer;
+        MessagePacket packet = *(MessagePacket*)(res.data);
 
         Serial.print("Received message: ");
         Serial.printf("- pressure: %.2fhPa\n", packet.pressure);
@@ -133,7 +123,7 @@ void loop() {
         Serial.printf("- power_mW: %.2fmW\n", packet.power_mW);
       #else
         // Print decoded buffer to Serial.
-        Serial.println(decodedBuffer);
+        Serial.println((char*)res.data);
       #endif
     }
   }

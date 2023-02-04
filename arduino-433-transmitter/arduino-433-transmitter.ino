@@ -1,7 +1,6 @@
 #include <Adafruit_INA219.h>
 #include <Adafruit_MPL3115A2.h>
 #include <Adafruit_SSD1306.h>
-#include <Base64.h>
 #include <LoRa_E32.h>
 #include <cmath>
 #include <pins_arduino.h>
@@ -166,15 +165,8 @@ void loop() {
   display.setCursor(0, 18);
   display.printf("P[%.2fmW]", txPacket.power_mW);
 
-  // Package the struct into a base64 string.g
-  char *struct_bytes = reinterpret_cast<char*>(&txPacket);
-  const int encoded_length = Base64.encodedLength(sizeof(MessagePacket));
-  char buffer[encoded_length];
-  Base64.encode(buffer, struct_bytes, sizeof(MessagePacket));
-  String message{buffer};
-
   // Transmit data!
-  Serial.printf("Sending data of size %ubytes:\n", message.length());
+  Serial.printf("Sending data of size %ubytes:\n", sizeof(txPacket));
   Serial.printf("- pressure: %.2fhPa\n", txPacket.pressure);
   Serial.printf("- temperature: %.2fC\n", txPacket.temperature);
   Serial.printf("- altitude: %.2fm\n", txPacket.altitude);
@@ -182,7 +174,7 @@ void loop() {
   Serial.printf("- loadVoltage: %.2fV\n", txPacket.loadVoltage);
   Serial.printf("- power_mW: %.2fmW\n", txPacket.power_mW);
 
-  ResponseStatus res = lora.sendFixedMessage(peerNode.ADDH, peerNode.ADDL, peerNode.CHAN, message);
+  ResponseStatus res = lora.sendFixedMessage(peerNode.ADDH, peerNode.ADDL, peerNode.CHAN, &txPacket, sizeof(txPacket));
   Serial.printf("TX Status: %s\n", res.getResponseDescription());
 
 
