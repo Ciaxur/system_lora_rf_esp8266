@@ -103,21 +103,16 @@ void loop() {
       u_char decodedBuffer[sizeof(MessagePacket)];
       const int decodedBufferLength = decode_base64(encodedBuffer, decodedBuffer);
 
-      // Verify the decoded length matches the expected size of the struct.
-      if (decodedBufferLength < sizeof(MessagePacket)) {
-        Serial.println("Unexpected decoded message length");
-      } else {
-        // Construct the packet.
-        MessagePacket packet = *(MessagePacket*)decodedBuffer;
+      // Construct the packet.
+      MessagePacket packet = *(MessagePacket*)decodedBuffer;
 
-        Serial.println("Received message:");
-        Serial.printf("- pressure: %.2fhPa\n", packet.pressure);
-        Serial.printf("- temperature: %.2fC\n", packet.temperature);
-        Serial.printf("- altitude: %.2fm\n", packet.altitude);
-        Serial.printf("- current_mA: %.2fmA\n", packet.current_mA);
-        Serial.printf("- loadVoltage: %.2fV\n", packet.loadVoltage);
-        Serial.printf("- power_mW: %.2fmW\n", packet.power_mW);
-      }
+      Serial.println("Received message:");
+      Serial.printf("- pressure: %.2fhPa\n", packet.pressure);
+      Serial.printf("- temperature: %.2fC\n", packet.temperature);
+      Serial.printf("- altitude: %.2fm\n", packet.altitude);
+      Serial.printf("- current_mA: %.2fmA\n", packet.current_mA);
+      Serial.printf("- loadVoltage: %.2fV\n", packet.loadVoltage);
+      Serial.printf("- power_mW: %.2fmW\n", packet.power_mW);
     }
   }
 
