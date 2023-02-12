@@ -42,6 +42,16 @@ func handleIngestorCommand(cmd *cobra.Command, args []string) error {
 		ingestorClient = *client
 	}
 
+	// Verify connection with api server.
+	if err := ingestor.PingApi(ingestorClient.HttpClient); err != nil {
+		return fmt.Errorf("failed to ping api server: %v", err)
+	}
+
+	// Ensure the node has been published to the server.
+	if err := ingestor.PostNode(ingestorClient.HttpClient); err != nil {
+		return fmt.Errorf("failed to create new node entry in api server: %v", err)
+	}
+
 	// Start ingesting!
 	if err := ingestorClient.Start(); err != nil {
 		return fmt.Errorf("client failed: %v", err)

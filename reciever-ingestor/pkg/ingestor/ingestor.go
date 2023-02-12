@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"regexp"
@@ -118,7 +119,7 @@ func (ingestorClient *Ingestor) Start() error {
 	for msg := range messages {
 		// Check on errors until fatal.
 		if msg.Error != nil {
-			fmt.Printf(
+			log.Printf(
 				"[%d/%d]failed to poll '%s': %v\n",
 				errCounter,
 				errMaxCounter,
@@ -132,14 +133,21 @@ func (ingestorClient *Ingestor) Start() error {
 			continue
 		}
 
-		// TODO: send messages to endpoint.
-		fmt.Println("Ingested message:")
-		fmt.Printf(" - Pressure: %.2f\n", msg.Pressure)
-		fmt.Printf(" - Temperature: %.2f\n", msg.Temperature)
-		fmt.Printf(" - Altitude: %.2f\n", msg.Altitude)
-		fmt.Printf(" - Current_mA: %.2f\n", msg.Current_mA)
-		fmt.Printf(" - LoadVoltage: %.2f\n", msg.LoadVoltage)
-		fmt.Printf(" - Power_mW: %.2f\n", msg.Power_mW)
+		log.Println("Ingested message:")
+		log.Printf(" - Pressure: %.2f\n", msg.Pressure)
+		log.Printf(" - Temperature: %.2f\n", msg.Temperature)
+		log.Printf(" - Altitude: %.2f\n", msg.Altitude)
+		log.Printf(" - Current_mA: %.2f\n", msg.Current_mA)
+		log.Printf(" - LoadVoltage: %.2f\n", msg.LoadVoltage)
+		log.Printf(" - Power_mW: %.2f\n", msg.Power_mW)
+
+		// Send ingested messages to the api server.
+		if err := PostNodeState(ingestorClient.HttpClient, msg); err != nil {
+			log.Printf(
+				"failed to post new state to api server: %v\n",
+				err,
+			)
+		}
 	}
 
 	return nil
