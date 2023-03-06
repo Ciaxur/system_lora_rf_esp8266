@@ -12,6 +12,11 @@ device (*receiver*).
   <img width="75%" src="arduino-433-transmitter/docs/tx_design.png"/>
 </p>
 
+### Circuit Board Rev1
+<p align="center">
+  <img width="75%" src="arduino-433-transmitter/docs/pcb-rev1-2023-03-05_easyeda.png"/>
+</p>
+
 ## Receiver Schematic
 <p align="center">
   <img width="75%" src="arduino-433-receiver/docs/rx_design.png"/>
