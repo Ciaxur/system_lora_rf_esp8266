@@ -3,6 +3,7 @@ package ingestor
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/pem"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -51,6 +52,20 @@ func NewInsecureIngestor(ingestFile string, endpoint string) (*Ingestor, error) 
 	}, nil
 }
 
+// Helper function that parses a certificate from a raw PEM bytes array.
+func ParseCertificateFromPEMBytes(pemBytes []byte) (*x509.Certificate, error) {
+	block, _ := pem.Decode([]byte(pemBytes))
+	if block == nil {
+		return nil, fmt.Errorf("failed to parse certificate from PEM")
+	}
+	cert, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse certificate: %v", err)
+	}
+
+	return cert, nil
+}
+
 // Initializes an secure ingestor client using the file to ingest and
 // endpoint to send the ingested data to.
 func NewSecureIngestor(ingestFile string, endpoint string, credentials IngestorCredentials) (*Ingestor, error) {
@@ -75,7 +90,7 @@ func NewSecureIngestor(ingestFile string, endpoint string, credentials IngestorC
 
 	// Load in trusted CAs.
 	// Create the CA pool, by iterating over a given directory, which will be used for verifying the client with.
-	trustedCasContent := [][]byte{}
+	trustedCas := []*x509.Certificate{}
 	trustedCaFiles, err := ioutil.ReadDir(*credentials.TrustedCasDir)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read trusted cas directory '%s': %v", *credentials.TrustedCasDir, err)
@@ -86,13 +101,18 @@ func NewSecureIngestor(ingestFile string, endpoint string, credentials IngestorC
 		if err != nil {
 			return nil, fmt.Errorf("failed to read the content of CA %s", filepath)
 		}
-		trustedCasContent = append(trustedCasContent, caCrtContent)
+
+		trustedCa, err := ParseCertificateFromPEMByptes(caCrtContent)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse certificate '%s': %v", caFile.Name(), err)
+		}
+		trustedCas = append(trustedCas, trustedCa)
 	}
 
 	// Create a CA certificate pool, in order for the certificate to be validated.
 	caCrtPool := x509.NewCertPool()
-	for _, trustedCa := range trustedCasContent {
-		caCrtPool.AppendCertsFromPEM(trustedCa)
+	for _, trustedCa := range trustedCas {
+		caCrtPool.AddCert(trustedCa)
 	}
 
 	// Apply TLS to the client.
