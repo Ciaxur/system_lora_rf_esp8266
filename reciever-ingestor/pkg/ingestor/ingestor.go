@@ -97,12 +97,14 @@ func NewSecureIngestor(ingestFile string, endpoint string, credentials IngestorC
 	}
 	for _, caFile := range trustedCaFiles {
 		filepath := filepath.Join(*credentials.TrustedCasDir, caFile.Name())
+		log.Printf("Loading trusted CA: %s\n", filepath)
+
 		caCrtContent, err := ioutil.ReadFile(filepath)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read the content of CA %s", filepath)
 		}
 
-		trustedCa, err := ParseCertificateFromPEMByptes(caCrtContent)
+		trustedCa, err := ParseCertificateFromPEMBytes(caCrtContent)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse certificate '%s': %v", caFile.Name(), err)
 		}
