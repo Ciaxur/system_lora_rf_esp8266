@@ -38,7 +38,7 @@ func PingApi(client *http.Client) error {
 	log.Println("Invoking a GET request to endpoint:", endpoint)
 	resp, err := client.Do(req)
 	if err != nil {
-		return fmt.Errorf("failed to invoke GET request with server")
+		return fmt.Errorf("failed to invoke GET request with server: %v", err)
 	}
 	defer resp.Body.Close()
 

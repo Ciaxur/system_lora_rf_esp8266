@@ -9,7 +9,7 @@ import (
 
 func handleIngestorCommand(cmd *cobra.Command, args []string) error {
 	// Construct the ingestor client.
-	clientCertFile := cmd.PersistentFlags().Lookup("certificate").Value.String()
+	clientCertFile := cmd.PersistentFlags().Lookup("cert").Value.String()
 	clientKeyFile := cmd.PersistentFlags().Lookup("key").Value.String()
 	trustedCasDir := cmd.PersistentFlags().Lookup("trusted-cas").Value.String()
 	file := cmd.PersistentFlags().Lookup("file").Value.String()
@@ -66,7 +66,7 @@ func NewIngestorCommand() *cobra.Command {
 		RunE:  handleIngestorCommand,
 	}
 
-	cmd.PersistentFlags().String("certificate", "", "Path to client certificate.")
+	cmd.PersistentFlags().String("cert", "", "Path to client certificate.")
 	cmd.PersistentFlags().String("key", "", "Path to client key.")
 	cmd.PersistentFlags().String("trusted-cas", "", "Path to a directory of trusted CA.")
 	cmd.PersistentFlags().String("endpoint", "localhost:3000", "Endpoint to send ingested messages to")

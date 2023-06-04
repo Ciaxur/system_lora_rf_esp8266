@@ -122,6 +122,7 @@ func NewSecureIngestor(ingestFile string, endpoint string, credentials IngestorC
 		TLSClientConfig: &tls.Config{
 			Certificates: []tls.Certificate{cert},
 			RootCAs:      caCrtPool,
+			MinVersion:   tls.VersionTLS12,
 		},
 	}
 
