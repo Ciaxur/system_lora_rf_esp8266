@@ -11,14 +11,14 @@ func handleIngestorCommand(cmd *cobra.Command, args []string) error {
 	// Construct the ingestor client.
 	clientCertFile := cmd.PersistentFlags().Lookup("certificate").Value.String()
 	clientKeyFile := cmd.PersistentFlags().Lookup("key").Value.String()
-	trustedCa := cmd.PersistentFlags().Lookup("trusted-ca").Value.String()
+	trustedCasDir := cmd.PersistentFlags().Lookup("trusted-cas").Value.String()
 	file := cmd.PersistentFlags().Lookup("file").Value.String()
 	endpoint := cmd.PersistentFlags().Lookup("endpoint").Value.String()
 
 	// Create ingestor client.
 	fmt.Printf("Ingesting from '%s' file onto endpoint %s\n", file, endpoint)
 	var ingestorClient ingestor.Ingestor
-	if clientCertFile == "" || clientKeyFile == "" || trustedCa == "" {
+	if clientCertFile == "" || clientKeyFile == "" || trustedCasDir == "" {
 		fmt.Println("Starting insecure ingestor client")
 		client, err := ingestor.NewInsecureIngestor(file, endpoint)
 		if err != nil {
@@ -33,7 +33,7 @@ func handleIngestorCommand(cmd *cobra.Command, args []string) error {
 			ingestor.IngestorCredentials{
 				ClientCertificateFile:    &clientCertFile,
 				ClientCertificateKeyFile: &clientKeyFile,
-				TrustedCaFile:            &trustedCa,
+				TrustedCasDir:            &trustedCasDir,
 			},
 		)
 		if err != nil {
@@ -68,7 +68,7 @@ func NewIngestorCommand() *cobra.Command {
 
 	cmd.PersistentFlags().String("certificate", "", "Path to client certificate.")
 	cmd.PersistentFlags().String("key", "", "Path to client key.")
-	cmd.PersistentFlags().String("trusted-ca", "", "Path to trusted CA.")
+	cmd.PersistentFlags().String("trusted-cas", "", "Path to a directory of trusted CA.")
 	cmd.PersistentFlags().String("endpoint", "localhost:3000", "Endpoint to send ingested messages to")
 	cmd.PersistentFlags().String("file", "", "File to ingest from")
 	cmd.MarkPersistentFlagRequired("file")

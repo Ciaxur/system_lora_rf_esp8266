@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"time"
@@ -19,7 +20,7 @@ import (
 type IngestorCredentials struct {
 	ClientCertificateFile    *string
 	ClientCertificateKeyFile *string
-	TrustedCaFile            *string
+	TrustedCasDir            *string
 }
 
 type Ingestor struct {
@@ -72,15 +73,27 @@ func NewSecureIngestor(ingestFile string, endpoint string, credentials IngestorC
 		)
 	}
 
-	// Load in trusted CA.
-	caCrtContent, err := ioutil.ReadFile(*credentials.TrustedCaFile)
+	// Load in trusted CAs.
+	// Create the CA pool, by iterating over a given directory, which will be used for verifying the client with.
+	trustedCasContent := [][]byte{}
+	trustedCaFiles, err := ioutil.ReadDir(*credentials.TrustedCasDir)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read the contents of CA cert %s", *credentials.TrustedCaFile)
+		return nil, fmt.Errorf("failed to read trusted cas directory '%s': %v", *credentials.TrustedCasDir, err)
+	}
+	for _, caFile := range trustedCaFiles {
+		filepath := filepath.Join(*credentials.TrustedCasDir, caFile.Name())
+		caCrtContent, err := ioutil.ReadFile(filepath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read the content of CA %s", filepath)
+		}
+		trustedCasContent = append(trustedCasContent, caCrtContent)
 	}
 
 	// Create a CA certificate pool, in order for the certificate to be validated.
 	caCrtPool := x509.NewCertPool()
-	caCrtPool.AppendCertsFromPEM(caCrtContent)
+	for _, trustedCa := range trustedCasContent {
+		caCrtPool.AppendCertsFromPEM(trustedCa)
+	}
 
 	// Apply TLS to the client.
 	ingestorClient.HttpClient.Transport = &http.Transport{
